@@ -1,0 +1,53 @@
+[project]
+name = "criador-etiqueta"
+version = "0.1.0"
+description = "Editor visual de etiquetas ZPL para impressoras Zebra"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Rafael Marcolino" }]
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "pillow>=10.3",
+    "python-barcode>=0.15",
+    "qrcode>=7.4",
+]
+
+# Extra opcional: impressao pela fila do Windows. Fica fora do padrao porque
+# so faz sentido no Windows e nem toda instalacao usa o spooler.
+#   uv sync --extra windows-print
+[project.optional-dependencies]
+windows-print = ["pywin32>=306"]
+
+# Ferramentas de desenvolvimento. O uv instala este grupo por padrao no
+# `uv sync` e o omite em `uv sync --no-dev` (instalacao de producao).
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",
+    "playwright>=1.44",   # testes exploratorios da interface em navegador real
+]
+
+[project.scripts]
+criador-etiqueta = "app.main:run"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

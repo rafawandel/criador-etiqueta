@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Criador de Etiquetas ZPL</title>
+  <link rel="stylesheet" href="/css/app.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🏷️</text></svg>" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <span class="topbar__mark">ZPL</span>
+    <input id="label-name" class="topbar__name" value="Nova etiqueta" aria-label="Nome da etiqueta" />
+  </div>
+
+  <div class="topbar__dims">
+    <label>Largura <input id="label-width" type="number" min="5" max="500" step="1" value="100" /><span>mm</span></label>
+    <label>Altura <input id="label-height" type="number" min="5" max="500" step="1" value="50" /><span>mm</span></label>
+    <label>Resolução <select id="label-dpi"></select></label>
+  </div>
+
+  <div class="topbar__actions">
+    <button id="btn-undo" class="btn btn--icon" title="Desfazer (Ctrl+Z)" aria-label="Desfazer">↶</button>
+    <button id="btn-redo" class="btn btn--icon" title="Refazer (Ctrl+Y)" aria-label="Refazer">↷</button>
+    <span class="sep"></span>
+    <button id="btn-new" class="btn">Nova</button>
+    <button id="btn-open" class="btn">Abrir</button>
+    <button id="btn-save" class="btn">Salvar</button>
+    <span class="sep"></span>
+    <button id="btn-export" class="btn">Baixar .zpl</button>
+    <button id="btn-print" class="btn btn--primary">Imprimir</button>
+  </div>
+</header>
+
+<main class="workspace">
+
+  <!-- ================= Paleta e camadas ================= -->
+  <aside class="panel panel--left">
+    <section class="panel__section">
+      <h2 class="panel__title">Objetos</h2>
+      <p class="panel__hint">Arraste para a etiqueta ou clique para inserir.</p>
+      <div id="palette" class="palette"></div>
+    </section>
+
+    <section class="panel__section panel__section--grow">
+      <h2 class="panel__title">
+        Camadas
+        <span class="panel__badge" id="layer-count">0</span>
+      </h2>
+      <p class="panel__hint">A ordem é a ordem de impressão: o último fica por cima.</p>
+      <ul id="layers" class="layers"></ul>
+    </section>
+  </aside>
+
+  <!-- ================= Área de desenho ================= -->
+  <section class="stage">
+    <div class="stage__toolbar">
+      <div class="toolgroup">
+        <button id="zoom-out" class="btn btn--icon" title="Reduzir">−</button>
+        <span id="zoom-level" class="toolgroup__value">100%</span>
+        <button id="zoom-in" class="btn btn--icon" title="Ampliar">+</button>
+        <button id="zoom-fit" class="btn btn--ghost" title="Ajustar à janela">Ajustar</button>
+      </div>
+      <div class="toolgroup">
+        <label class="check"><input type="checkbox" id="opt-grid" checked /> Grade</label>
+        <label class="check"><input type="checkbox" id="opt-snap" checked /> Ímã</label>
+        <label class="check"><input type="checkbox" id="opt-rulers" checked /> Réguas</label>
+      </div>
+      <div class="toolgroup toolgroup--right">
+        <button id="align-left" class="btn btn--ghost" title="Alinhar à esquerda da etiqueta">⇤</button>
+        <button id="align-hcenter" class="btn btn--ghost" title="Centralizar na horizontal">↔</button>
+        <button id="align-right" class="btn btn--ghost" title="Alinhar à direita">⇥</button>
+        <button id="align-vcenter" class="btn btn--ghost" title="Centralizar na vertical">↕</button>
+      </div>
+    </div>
+
+    <div class="stage__viewport" id="viewport">
+      <div class="ruler ruler--top" id="ruler-top"></div>
+      <div class="ruler ruler--left" id="ruler-left"></div>
+      <div class="ruler__corner"></div>
+
+      <div class="stage__scroll" id="scroll">
+        <div class="sheet-wrap" id="sheet-wrap">
+          <div class="sheet" id="sheet" tabindex="0" aria-label="Área da etiqueta">
+            <div class="sheet__grid" id="sheet-grid"></div>
+            <div class="sheet__elements" id="elements"></div>
+            <div class="sheet__guides" id="guides"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage__status">
+      <span id="status-cursor">—</span>
+      <span id="status-selection">Nenhum objeto selecionado</span>
+      <span id="status-size" class="stage__status-right">—</span>
+    </div>
+  </section>
+
+  <!-- ================= Propriedades ================= -->
+  <aside class="panel panel--right">
+    <div class="tabs" role="tablist">
+      <button class="tab is-active" data-tab="props" role="tab">Propriedades</button>
+      <button class="tab" data-tab="label" role="tab">Etiqueta</button>
+    </div>
+
+    <div class="panel__body" id="tab-props">
+      <div id="inspector" class="inspector">
+        <p class="empty">Selecione um objeto para editar suas propriedades.</p>
+      </div>
+    </div>
+
+    <div class="panel__body is-hidden" id="tab-label">
+      <div class="inspector" id="label-settings"></div>
+    </div>
+  </aside>
+
+  <!-- ================= ZPL ao vivo ================= -->
+  <aside class="panel panel--zpl">
+    <div class="panel__header">
+      <h2 class="panel__title">Código ZPL</h2>
+      <div class="panel__header-actions">
+        <label class="check" title="Inserir comentários ^FX com o nome de cada campo">
+          <input type="checkbox" id="opt-comments" checked /> Comentários
+        </label>
+        <button id="btn-copy" class="btn btn--ghost">Copiar</button>
+      </div>
+    </div>
+
+    <div class="zpl" id="zpl-view">
+      <pre class="zpl__code" id="zpl-code"></pre>
+    </div>
+
+    <div class="zpl__meta">
+      <span id="zpl-size">0 bytes</span>
+      <span id="zpl-dots">—</span>
+    </div>
+
+    <div class="issues" id="issues"></div>
+  </aside>
+</main>
+
+<!-- ================= Diálogos ================= -->
+<dialog id="dialog-open" class="dialog">
+  <h3>Abrir modelo</h3>
+  <ul id="template-list" class="template-list"></ul>
+  <footer class="dialog__footer">
+    <button class="btn" data-close>Fechar</button>
+  </footer>
+</dialog>
+
+<dialog id="dialog-print" class="dialog">
+  <h3>Imprimir etiqueta</h3>
+  <div id="print-form" class="dialog__body"></div>
+  <footer class="dialog__footer">
+    <button class="btn" data-close>Cancelar</button>
+    <button id="btn-print-confirm" class="btn btn--primary">Enviar para impressora</button>
+  </footer>
+</dialog>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>

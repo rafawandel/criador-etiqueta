@@ -1,0 +1,20 @@
+# uv.lock NAO entra aqui: ele e versionado de proposito, para que todos os
+# ambientes instalem exatamente as mesmas versoes.
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Modelos salvos pelo usuario -- versione apenas se o time compartilhar os
+# mesmos modelos; caso contrario cada maquina tem os seus.
+templates_store/*.json
+
+*.zpl
+.env
+.DS_Store
